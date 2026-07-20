@@ -6,16 +6,19 @@ on:
             - 'main'
             - 'dev'
     workflow_dispatch:
-  
+
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
+
 jobs:
     build:
         name: Build SCInsta Rootless
         runs-on: macos-latest
         permissions:
             contents: write
+        env:
+            HOMEBREW_NO_REQUIRE_TAP_TRUST: "1"
 
         steps:
             - name: Checkout Main
@@ -24,8 +27,10 @@ jobs:
                 path: main
                 submodules: recursive
 
-            - name: Install Dependencies
-              run: brew install ldid dpkg make
+            - name: Fix Homebrew Taps & Install Dependencies
+              run: |
+                brew untap aws/tap || true
+                brew install ldid dpkg make
 
             - name: Set PATH environment variable
               run: echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH 
@@ -68,7 +73,7 @@ jobs:
                 echo "version=${SCINSTA_VERSION}" >> "$GITHUB_OUTPUT"
             
             - name: Build SCInsta tweak for Rootless
-              run: |                
+              run: |
                 cd main
                 ls -la
 
