@@ -26,9 +26,11 @@ concurrency:
 jobs:
     build:
         name: Build SCInsta
-        runs-on: macos-latest
+        runs-on: macos-13
         permissions:
             contents: write
+        env:
+            HOMEBREW_NO_REQUIRE_TAP_TRUST: "1"
 
         steps:
             - name: Checkout Main
@@ -37,10 +39,10 @@ jobs:
                 path: main
                 submodules: recursive
 
-            - name: Install Dependencies
-              env:
-                HOMEBREW_NO_REQUIRE_TAP_TRUST: 1
-              run: brew install ldid dpkg make
+            - name: Fix Homebrew Taps & Install Dependencies
+              run: |
+                brew untap aws/tap || true
+                brew install ldid dpkg make
 
             - name: Set PATH environment variable
               run: echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH 
@@ -105,6 +107,7 @@ jobs:
                 export PATH=.:$PATH
                 ls -la
 
+                export FINALPACKAGE=1
                 ./build.sh sideload
                 ls -la packages
                 
