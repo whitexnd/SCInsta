@@ -19,6 +19,8 @@ jobs:
             contents: write
         env:
             HOMEBREW_NO_REQUIRE_TAP_TRUST: "1"
+            # CORRECCIÓN 1: Hacemos THEOS global
+            THEOS: ${{ github.workspace }}/theos
 
         steps:
             - name: Checkout Main
@@ -56,19 +58,18 @@ jobs:
             - name: Download iOS SDK
               if: steps.SDK.outputs.cache-hit != 'true'
               run: |
+                # CORRECCIÓN 2: Crear directorio sdks
+                mkdir -p $THEOS/sdks
                 git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/xybp888/iOS-SDKs/
                 cd iOS-SDKs
                 git sparse-checkout set --no-cone iPhoneOS16.2.sdk
                 git checkout
-                mv *.sdk $THEOS/sdks
-              env:
-                THEOS: ${{ github.workspace }}/theos
+                mv *.sdk $THEOS/sdks/
 
             - name: Get SCInsta Version
               id: scinsta_version
               run: |
                 SCINSTA_VERSION=$(awk '/Version:/ {print $2}' main/control)
-
                 echo "SCINSTA_VERSION=${SCINSTA_VERSION}" >> "$GITHUB_ENV"
                 echo "version=${SCINSTA_VERSION}" >> "$GITHUB_OUTPUT"
             
@@ -76,12 +77,10 @@ jobs:
               run: |
                 cd main
                 ls -la
-
+                # CORRECCIÓN 3: Ver errores reales
+                export Q=
                 ./build.sh rootless
                 ls -la packages
-                
-              env:
-                THEOS: ${{ github.workspace }}/theos
 
             - name: Rename deb to include version info
               run: |
