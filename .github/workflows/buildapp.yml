@@ -1,8 +1,3 @@
-# Inspired heavily by the following workflows
-# https://github.com/arichornlover/uYouEnhanced/blob/main/.github/workflows/buildapp.yml
-# https://github.com/ISnackable/YTCubePlus/blob/main/.github/workflows/Build.yml
-# https://github.com/BandarHL/BHTwitter/actions/workflows/build.yml
-
 name: Build and Package SCInsta
 
 on:
@@ -31,6 +26,8 @@ jobs:
             contents: write
         env:
             HOMEBREW_NO_REQUIRE_TAP_TRUST: "1"
+            # CORRECCIÓN 1: Hacemos THEOS global para que build.sh lo herede siempre
+            THEOS: ${{ github.workspace }}/theos
 
         steps:
             - name: Checkout Main
@@ -68,32 +65,27 @@ jobs:
             - name: Download iOS SDK
               if: steps.SDK.outputs.cache-hit != 'true'
               run: |
+                # CORRECCIÓN 2: Asegurarnos de que la carpeta exista
+                mkdir -p $THEOS/sdks
                 git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/xybp888/iOS-SDKs/
                 cd iOS-SDKs
                 git sparse-checkout set --no-cone iPhoneOS16.2.sdk
                 git checkout
-                mv *.sdk $THEOS/sdks
-              env:
-                THEOS: ${{ github.workspace }}/theos
+                mv *.sdk $THEOS/sdks/
 
             - name: Prepare Instagram IPA
               run: |
                 cd main
-
                 mkdir -p packages
                 wget "$Instagram_URL" --no-verbose -O packages/com.burbn.instagram.ipa
-
                 ls -la packages
-                
               env:
-                THEOS: ${{ github.workspace }}/theos
                 Instagram_URL: ${{ inputs.decrypted_instagram_url }}
 
             - name: Get SCInsta Version
               id: scinsta_version
               run: |
                 SCINSTA_VERSION=$(awk '/Version:/ {print $2}' main/control)
-
                 echo "SCINSTA_VERSION=${SCINSTA_VERSION}" >> "$GITHUB_ENV"
                 echo "version=${SCINSTA_VERSION}" >> "$GITHUB_OUTPUT"
             
@@ -108,11 +100,10 @@ jobs:
                 ls -la
 
                 export FINALPACKAGE=1
+                # CORRECCIÓN 3: Q= hace que make muestre el error real si falla
+                export Q=
                 ./build.sh sideload
                 ls -la packages
-                
-              env:
-                THEOS: ${{ github.workspace }}/theos
 
             - name: Rename IPA to include version info
               run: |
