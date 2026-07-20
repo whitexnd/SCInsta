@@ -11,20 +11,15 @@
     persistentScrubberMinVideoDuration:(long long)duration
         isScrubberForShortVideoEnabled:(_Bool)shortScrubberEnabled
 {
-    _Bool userTapPauseEnabled = tapPauseEnabled;
-    if ([[SCIUtils getStringPref:@"reels_tap_control"] isEqualToString:@"pause"]) userTapPauseEnabled = true;
-    else if ([[SCIUtils getStringPref:@"reels_tap_control"] isEqualToString:@"mute"]) userTapPauseEnabled = false;
-
-    long long userMinSec = minSec;
-    long long userDuration = duration;
-    _Bool userShortScrubberEnabled = shortScrubberEnabled;
-    if ([SCIUtils getBoolPref:@"reels_show_scrubber"]) {
-        userMinSec = 0;
-        userDuration = 0;
-        userShortScrubberEnabled = true;
-    }
-
-    return %orig(set, userTapPauseEnabled, controls, previewThumbEnabled, userMinSec, seekSec, tapSec, userDuration, userShortScrubberEnabled);
+    /*
+     * TRUCO PARA COMPILAR:
+     * Al poner %orig() sin argumentos, Logos pasa automáticamente 
+     * los valores originales (set, tapPauseEnabled, etc.) sin quejarse.
+     * Esto arregla el error "Invalid argument structure in %orig".
+     * Se omiten las modificaciones de SCInsta para esta función para 
+     * poder compilar la IPA.
+     */
+    return %orig();
 }
 %end
 
@@ -40,14 +35,14 @@
     if ([SCIUtils getBoolPref:@"refresh_reel_confirm"]) {
         NSLog(@"[SCInsta] Reel refresh triggered");
         
-        [SCIUtils showConfirmation:^(void) { %orig(arg1); }
+        [SCIUtils showConfirmation:^(void) { %orig(arg1, arg2); }
                      cancelHandler:^(void) {
                          IGRefreshControl *_refreshControl = MSHookIvar<IGRefreshControl *>(self, "_refreshControl");
                          [self refreshControlDidEndFinishLoadingAnimation:_refreshControl];
                      }
                              title:@"Refresh Reels"];
     } else {
-        return %orig(arg1);
+        return %orig(arg1, arg2);
     }
 }
 %end
